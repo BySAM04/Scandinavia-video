@@ -100,7 +100,10 @@ function App() {
 
   // Animation function with improved error handling
   const animate = (canvas, ctx, loadedImgs, startTime) => {
-    if (!isAnimating) return;
+    if (!animationStateRef.current) {
+      console.log('Animation stopped by ref state');
+      return;
+    }
 
     try {
       const currentTime = (Date.now() - startTime) / 1000; // Convert to seconds
@@ -221,15 +224,18 @@ function App() {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      if (currentTime < VIDEO_DURATION) {
+      if (currentTime < VIDEO_DURATION && animationStateRef.current) {
+        console.log('Requesting next animation frame...');
         requestAnimationFrame(() => animate(canvas, ctx, loadedImgs, startTime));
       } else {
-        console.log('Animation completed');
+        console.log('Animation completed or stopped');
+        animationStateRef.current = false;
         setIsAnimating(false);
         stopRecording();
       }
     } catch (error) {
       console.error('Animation error:', error);
+      animationStateRef.current = false;
       setIsAnimating(false);
       stopRecording();
     }
