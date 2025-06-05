@@ -265,6 +265,8 @@ function App() {
       imagesReady: loadedImages.filter(img => img.complete && img.naturalWidth > 0).length
     });
     
+    // Set both state and ref
+    animationStateRef.current = true;
     setIsAnimating(true);
     setProgress(0);
     setVideoUrl(null);
@@ -275,6 +277,7 @@ function App() {
     // Start animation
     const startTime = Date.now();
     console.log('Animation started at:', new Date(startTime));
+    console.log('Starting first animation frame...');
     animate(canvas, ctx, loadedImages, startTime);
   };
 
