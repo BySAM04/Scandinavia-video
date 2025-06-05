@@ -241,7 +241,22 @@ function App() {
     }
 
     const canvas = canvasRef.current;
+    if (!canvas) {
+      console.error('Canvas not found');
+      return;
+    }
+
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error('Canvas context not available');
+      return;
+    }
+
+    console.log('Starting animation with:', {
+      canvasDimensions: `${canvas.width}x${canvas.height}`,
+      loadedImages: loadedImages.length,
+      imagesReady: loadedImages.filter(img => img.complete && img.naturalWidth > 0).length
+    });
     
     setIsAnimating(true);
     setProgress(0);
@@ -252,6 +267,7 @@ function App() {
 
     // Start animation
     const startTime = Date.now();
+    console.log('Animation started at:', new Date(startTime));
     animate(canvas, ctx, loadedImages, startTime);
   };
 
