@@ -39,25 +39,58 @@ function App() {
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
 
-  // Preload all images
+  // Preload all images with better error handling
   useEffect(() => {
     const loadImages = async () => {
-      const imagePromises = images.map(src => {
+      console.log('Starting to load images...');
+      const imagePromises = images.map((src, index) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
+          
+          img.onload = () => {
+            console.log(`Image ${index + 1} loaded successfully:`, {
+              src: src.substring(0, 50) + '...',
+              width: img.naturalWidth,
+              height: img.naturalHeight
+            });
+            resolve(img);
+          };
+          
+          img.onerror = (error) => {
+            console.error(`Failed to load image ${index + 1}:`, src, error);
+            // Create a fallback colored rectangle
+            const canvas = document.createElement('canvas');
+            canvas.width = 1920;
+            canvas.height = 1080;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a gradient background as fallback
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c'];
+            gradient.addColorStop(0, colors[index % colors.length]);
+            gradient.addColorStop(1, colors[(index + 1) % colors.length]);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to image
+            const fallbackImg = new Image();
+            fallbackImg.src = canvas.toDataURL();
+            fallbackImg.onload = () => resolve(fallbackImg);
+          };
+          
+          // Set src last to trigger loading
           img.crossOrigin = 'anonymous';
-          img.onload = () => resolve(img);
-          img.onerror = reject;
           img.src = src;
         });
       });
 
       try {
         const loaded = await Promise.all(imagePromises);
+        console.log(`Successfully loaded ${loaded.length} images`);
         setLoadedImages(loaded);
-        console.log('All images loaded successfully');
       } catch (error) {
-        console.error('Error loading images:', error);
+        console.error('Error in image loading process:', error);
       }
     };
 
