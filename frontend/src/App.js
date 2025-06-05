@@ -381,6 +381,27 @@ function App() {
               {isAnimating ? 'Creating Video...' : 'Generate Instagram Story'}
             </button>
 
+            {/* Debug test button */}
+            <button
+              onClick={() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                // Test canvas drawing
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, 200, 200);
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(200, 200, 200, 200);
+                ctx.fillStyle = '#0000ff';
+                ctx.fillRect(400, 400, 200, 200);
+                
+                console.log('Canvas test completed');
+              }}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg"
+            >
+              Test Canvas
+            </button>
+
             {videoUrl && (
               <div className="text-center space-y-3">
                 <p className="text-green-300 font-semibold">✓ Video generated successfully!</p>
