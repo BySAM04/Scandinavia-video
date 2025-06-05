@@ -64,97 +64,138 @@ function App() {
     loadImages();
   }, []);
 
-  // Animation function
+  // Animation function with improved error handling
   const animate = (canvas, ctx, loadedImgs, startTime) => {
     if (!isAnimating) return;
 
-    const currentTime = (Date.now() - startTime) / 1000; // Convert to seconds
-    const progressPercent = Math.min(currentTime / VIDEO_DURATION, 1);
-    setProgress(progressPercent);
+    try {
+      const currentTime = (Date.now() - startTime) / 1000; // Convert to seconds
+      const progressPercent = Math.min(currentTime / VIDEO_DURATION, 1);
+      setProgress(progressPercent);
 
-    // Clear canvas
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      // Clear canvas with test color to verify it's working
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Calculate which images to show and transition between
-    const sceneIndex = Math.floor((currentTime / VIDEO_DURATION) * loadedImgs.length);
-    const nextSceneIndex = (sceneIndex + 1) % loadedImgs.length;
-    const sceneProgress = ((currentTime / VIDEO_DURATION) * loadedImgs.length) % 1;
-
-    const currentImg = loadedImgs[sceneIndex];
-    const nextImg = loadedImgs[nextSceneIndex];
-
-    if (currentImg) {
-      // Calculate scaling to cover the canvas while maintaining aspect ratio
-      const imgAspect = currentImg.width / currentImg.height;
-      const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-      
-      let drawWidth, drawHeight, offsetX, offsetY;
-      
-      if (imgAspect > canvasAspect) {
-        // Image is wider than canvas
-        drawHeight = CANVAS_HEIGHT;
-        drawWidth = drawHeight * imgAspect;
-        offsetX = (CANVAS_WIDTH - drawWidth) / 2;
-        offsetY = 0;
-      } else {
-        // Image is taller than canvas
-        drawWidth = CANVAS_WIDTH;
-        drawHeight = drawWidth / imgAspect;
-        offsetX = 0;
-        offsetY = (CANVAS_HEIGHT - drawHeight) / 2;
+      if (loadedImgs.length === 0) {
+        console.error('No loaded images available for animation');
+        return;
       }
 
-      // Add zoom effect for dynamism
-      const zoomFactor = 1 + (sceneProgress * 0.1); // Slight zoom during each scene
-      drawWidth *= zoomFactor;
-      drawHeight *= zoomFactor;
-      offsetX -= (drawWidth - CANVAS_WIDTH) / 2;
-      offsetY -= (drawHeight - CANVAS_HEIGHT) / 2;
+      // Calculate which images to show and transition between
+      const totalScenes = Math.min(loadedImgs.length, 8); // Use first 8 images for better timing
+      const sceneIndex = Math.floor((currentTime / VIDEO_DURATION) * totalScenes);
+      const nextSceneIndex = (sceneIndex + 1) % totalScenes;
+      const sceneProgress = ((currentTime / VIDEO_DURATION) * totalScenes) % 1;
 
-      // Draw current image
-      ctx.globalAlpha = 1 - (sceneProgress > 0.8 ? (sceneProgress - 0.8) * 5 : 0);
-      ctx.drawImage(currentImg, offsetX, offsetY, drawWidth, drawHeight);
+      const currentImg = loadedImgs[sceneIndex];
+      const nextImg = loadedImgs[nextSceneIndex];
 
-      // Draw next image with fade-in effect
-      if (nextImg && sceneProgress > 0.8) {
-        ctx.globalAlpha = (sceneProgress - 0.8) * 5;
+      console.log(`Scene: ${sceneIndex}, Progress: ${sceneProgress.toFixed(2)}, Time: ${currentTime.toFixed(1)}s`);
+
+      if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
+        // Calculate scaling to cover the canvas while maintaining aspect ratio
+        const imgAspect = currentImg.naturalWidth / currentImg.naturalHeight;
+        const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
         
-        // Calculate scaling for next image
-        const nextImgAspect = nextImg.width / nextImg.height;
-        let nextDrawWidth, nextDrawHeight, nextOffsetX, nextOffsetY;
+        let drawWidth, drawHeight, offsetX, offsetY;
         
-        if (nextImgAspect > canvasAspect) {
-          nextDrawHeight = CANVAS_HEIGHT;
-          nextDrawWidth = nextDrawHeight * nextImgAspect;
-          nextOffsetX = (CANVAS_WIDTH - nextDrawWidth) / 2;
-          nextOffsetY = 0;
+        if (imgAspect > canvasAspect) {
+          // Image is wider than canvas
+          drawHeight = CANVAS_HEIGHT;
+          drawWidth = drawHeight * imgAspect;
+          offsetX = (CANVAS_WIDTH - drawWidth) / 2;
+          offsetY = 0;
         } else {
-          nextDrawWidth = CANVAS_WIDTH;
-          nextDrawHeight = nextDrawWidth / nextImgAspect;
-          nextOffsetX = 0;
-          nextOffsetY = (CANVAS_HEIGHT - nextDrawHeight) / 2;
+          // Image is taller than canvas
+          drawWidth = CANVAS_WIDTH;
+          drawHeight = drawWidth / imgAspect;
+          offsetX = 0;
+          offsetY = (CANVAS_HEIGHT - drawHeight) / 2;
         }
 
-        ctx.drawImage(nextImg, nextOffsetX, nextOffsetY, nextDrawWidth, nextDrawHeight);
+        // Add zoom effect for dynamism
+        const zoomFactor = 1 + (sceneProgress * 0.1); // Slight zoom during each scene
+        drawWidth *= zoomFactor;
+        drawHeight *= zoomFactor;
+        offsetX -= (drawWidth - CANVAS_WIDTH) / 2;
+        offsetY -= (drawHeight - CANVAS_HEIGHT) / 2;
+
+        // Draw current image
+        const fadeOut = sceneProgress > 0.7 ? (sceneProgress - 0.7) / 0.3 : 0;
+        ctx.globalAlpha = 1 - fadeOut;
+        
+        try {
+          ctx.drawImage(currentImg, offsetX, offsetY, drawWidth, drawHeight);
+          console.log(`Drew current image ${sceneIndex} successfully`);
+        } catch (imgError) {
+          console.error('Error drawing current image:', imgError);
+        }
+
+        // Draw next image with fade-in effect
+        if (nextImg && nextImg.complete && nextImg.naturalWidth > 0 && sceneProgress > 0.7) {
+          ctx.globalAlpha = fadeOut;
+          
+          // Calculate scaling for next image
+          const nextImgAspect = nextImg.naturalWidth / nextImg.naturalHeight;
+          let nextDrawWidth, nextDrawHeight, nextOffsetX, nextOffsetY;
+          
+          if (nextImgAspect > canvasAspect) {
+            nextDrawHeight = CANVAS_HEIGHT;
+            nextDrawWidth = nextDrawHeight * nextImgAspect;
+            nextOffsetX = (CANVAS_WIDTH - nextDrawWidth) / 2;
+            nextOffsetY = 0;
+          } else {
+            nextDrawWidth = CANVAS_WIDTH;
+            nextDrawHeight = nextDrawWidth / nextImgAspect;
+            nextOffsetX = 0;
+            nextOffsetY = (CANVAS_HEIGHT - nextDrawHeight) / 2;
+          }
+
+          try {
+            ctx.drawImage(nextImg, nextOffsetX, nextOffsetY, nextDrawWidth, nextDrawHeight);
+            console.log(`Drew next image ${nextSceneIndex} successfully`);
+          } catch (imgError) {
+            console.error('Error drawing next image:', imgError);
+          }
+        }
+
+        ctx.globalAlpha = 1;
+      } else {
+        console.warn(`Image ${sceneIndex} not ready:`, {
+          complete: currentImg?.complete,
+          naturalWidth: currentImg?.naturalWidth,
+          src: currentImg?.src
+        });
+        
+        // Draw placeholder with scene info
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.fillStyle = '#fff';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Loading Scene ${sceneIndex + 1}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
       }
 
-      ctx.globalAlpha = 1;
-    }
+      // Add subtle vignette effect for cinematic feel
+      const gradient = ctx.createRadialGradient(
+        CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 0,
+        CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 1.5
+      );
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Add subtle vignette effect for cinematic feel
-    const gradient = ctx.createRadialGradient(
-      CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 0,
-      CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT / 1.5
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    if (currentTime < VIDEO_DURATION) {
-      requestAnimationFrame(() => animate(canvas, ctx, loadedImgs, startTime));
-    } else {
+      if (currentTime < VIDEO_DURATION) {
+        requestAnimationFrame(() => animate(canvas, ctx, loadedImgs, startTime));
+      } else {
+        console.log('Animation completed');
+        setIsAnimating(false);
+        stopRecording();
+      }
+    } catch (error) {
+      console.error('Animation error:', error);
       setIsAnimating(false);
       stopRecording();
     }
