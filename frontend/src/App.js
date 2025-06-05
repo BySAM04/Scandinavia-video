@@ -38,6 +38,7 @@ function App() {
   const [progress, setProgress] = useState(0);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
+  const animationStateRef = useRef(false); // Use ref to track animation state
 
   // Preload all images with better error handling
   useEffect(() => {
