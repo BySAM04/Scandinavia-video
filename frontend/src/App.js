@@ -313,6 +313,13 @@ function App() {
     }
   };
 
+  const stopAnimation = () => {
+    console.log('Stopping animation manually');
+    animationStateRef.current = false;
+    setIsAnimating(false);
+    stopRecording();
+  };
+
   const downloadVideo = () => {
     if (videoUrl) {
       const a = document.createElement('a');
